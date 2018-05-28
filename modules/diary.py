@@ -32,6 +32,13 @@ def now_date():
     """
     return str(time.strftime("%d-%m-%Y"))
 
+def yesterday_date():
+    """
+    get yesterday date
+    :return:
+    """
+    yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
+    return str(yesterday.strftime("%d-%m-%Y"))
 
 def todays_tasks_entry_file_path():
     """
@@ -48,10 +55,16 @@ def todays_notes_entry_file_path():
     """
     return DIARY_CONFIG_FOLDER_PATH + '/' + now_date() + "-notes.yaml"
 
+def yesterday_notes_entry_file_path():
+    """
+    get file path for yesterday's notes entry file
+    :return:
+    """
+    return DIARY_CONFIG_FOLDER_PATH + '/' + yesterday_date() + "-notes.yaml"
 
 TODAYS_TASKS_ENTRY_FILE_PATH = todays_tasks_entry_file_path()
 TODAYS_NOTES_ENTRY_FILE_PATH = todays_notes_entry_file_path()
-
+YESTERDAY_NOTES_ENTRY_FILE_PATH = yesterday_notes_entry_file_path()
 
 def today_entry_check():
     """
@@ -63,24 +76,6 @@ def today_entry_check():
         except OSError as exc:  # Guard against race condition
             if exc.errno != errno.EEXIST:
                 raise
-
-
-def append_data_into_file(data, file_path):
-    """
-    append data into existing file
-    :param data:
-    :param file_path:
-    """
-    with open(file_path) as todays_tasks_entry:
-        # read contents
-        contents = yaml.load(todays_tasks_entry)
-        contents['entries'].append(
-            data
-        )
-
-        # enter data
-        with open(file_path, "w") as todays_tasks_entry:
-            yaml.dump(contents, todays_tasks_entry, default_flow_style=False)
 
 
 # new journal entry
@@ -261,6 +256,27 @@ def notes():
         click.echo(chalk.red(
             'There are no notes for today. Add a new note by entering "yoda diary nn"'))
 
+def yesterday_note():
+    """
+    see notes for yesterday
+    """
+    if os.path.isfile(YESTERDAY_NOTES_ENTRY_FILE_PATH):
+        with open(YESTERDAY_NOTES_ENTRY_FILE_PATH) as yesterday_notes_entry:
+            contents = yaml.load(yesterday_notes_entry)
+
+            click.echo('Yesterday\'s notes:')
+            click.echo('----------------')
+            click.echo("  Time  | Note")
+            click.echo("--------|-----")
+
+            for entry in contents['entries']:
+                time = entry['time']
+                text = entry['text']
+                click.echo(time + "| " + text)
+
+    else:
+        click.echo(chalk.red(
+            'There are no notes for yesterday."'))
 
 def check_sub_command(c):
     """
@@ -274,6 +290,7 @@ def check_sub_command(c):
         'nt': new_task,
         'ct': complete_task,
         'notes': notes,
+        'yesterday' : yesterday_note,
         'analyze': current_month_task_analysis,
     }
     try:
